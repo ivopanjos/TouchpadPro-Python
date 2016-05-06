@@ -141,6 +141,8 @@ class MainClass:
                                              last_slot1_x, last_slot1_y,
                                              double_tap, triple_tap, start_time, end_time)
 
+        print(value.name)
+        """
         window_class = self.window_manager.get_active_window_class()
 
         if window_class is not None and triple_tap:
@@ -151,6 +153,7 @@ class MainClass:
 
         if list_ecodes is not None:
             self.keyboard.press_key(list_ecodes)
+        """
 
 
 # Call main method

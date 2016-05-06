@@ -1,6 +1,6 @@
 from ewmh import EWMH
 from evdev import ecodes as e
-import GesturesIdConst as GesturesId
+from GesturesEnum import GesturesEnum as GesturesEnum
 
 
 class WindowManager:
@@ -11,8 +11,8 @@ class WindowManager:
         self.window_manager = EWMH()
         self.dict = dict()
 
-        self.dict[GesturesId.THREE_SWIPE_LEFT] = [e.KEY_LEFTALT, e.KEY_RIGHT]
-        self.dict[GesturesId.THREE_SWIPE_RIGHT] = [e.KEY_LEFTALT, e.KEY_LEFT]
+        self.dict[GesturesEnum.THREE_SWIPE_LEFT] = [e.KEY_LEFTALT, e.KEY_RIGHT]
+        self.dict[GesturesEnum.THREE_SWIPE_RIGHT] = [e.KEY_LEFTALT, e.KEY_LEFT]
 
     def get_active_window_class(self):
         window = self.window_manager.getActiveWindow()
