@@ -1,5 +1,6 @@
-from math import sqrt
+from math import hypot
 from GesturesEnum import GesturesEnum as GesturesEnum
+from Utils import delta, angle, average
 
 
 class Gestures:
@@ -15,7 +16,7 @@ class Gestures:
     MIN_SWIPE_Y_SPEED = 800
 
     MIN_PINCH_DIST = 1000
-    MIN_SLOPE_DIST = 0.5
+    MIN_ANGLE_DIST = 20
 
     def compute_events(self,
                        first_slot0_x, first_slot0_y,
@@ -35,15 +36,7 @@ class Gestures:
                                last_slot0_x, last_slot0_y,
                                last_slot1_x, last_slot1_y, delta_time)
 
-            if value in (GesturesEnum.PINCH_IN, GesturesEnum.PINCH_OUT):
-                return value
-
-            value = self.rotation(first_slot0_x, first_slot0_y,
-                                  first_slot1_x, first_slot1_y,
-                                  last_slot0_x, last_slot0_y,
-                                  last_slot1_x, last_slot1_y, delta_time)
-
-            if value in (GesturesEnum.ROTATE_CW, GesturesEnum.ROTATE_ACW):
+            if value in (GesturesEnum.PINCH_IN, GesturesEnum.PINCH_OUT, GesturesEnum.ROTATE_CW, GesturesEnum.ROTATE_ACW):
                 return value
 
         # no pinch or rotation gestures detected
@@ -102,55 +95,55 @@ class Gestures:
                 return GesturesEnum.TWO_SWIPE_DOWN
 
     def pinch(self,
-              first_slot0_x, first_slot0_y,
-              first_slot1_x, first_slot1_y,
-              last_slot0_x, last_slot0_y,
-              last_slot1_x, last_slot1_y,
-              delta_time):
-
-        delta_x_start = pow(first_slot1_x - first_slot0_x, 2)
-        delta_y_start = pow(first_slot1_y - first_slot0_y, 2)
-
-        delta_x_end = pow(last_slot1_x - last_slot0_x, 2)
-        delta_y_end = pow(last_slot1_y - last_slot0_y, 2)
-
-        distance_start = sqrt(delta_x_start + delta_y_start)
-        distance_end = sqrt(delta_x_end + delta_y_end)
-
-        delta_distance = distance_end - distance_start
-
-        if abs(delta_distance) < self.MIN_PINCH_DIST:
-            return GesturesEnum.NOT_DEFINED
-
-        if delta_distance < 0:
-            return GesturesEnum.PINCH_IN
-        else:
-            return GesturesEnum.PINCH_OUT
-
-    def rotation(self,
                  first_slot0_x, first_slot0_y,
                  first_slot1_x, first_slot1_y,
                  last_slot0_x, last_slot0_y,
                  last_slot1_x, last_slot1_y,
                  delta_time):
 
-        delta_x_start = first_slot1_x - first_slot0_x
-        delta_y_start = first_slot1_y - first_slot0_y
+        delta_x_start = delta(first_slot1_x, first_slot0_x)
+        delta_y_start = delta(first_slot1_y, first_slot0_y)
 
-        delta_x_end = last_slot1_x - last_slot0_x
-        delta_y_end = last_slot1_y - last_slot0_y
+        delta_x_end = delta(last_slot1_x, last_slot0_x)
+        delta_y_end = delta(last_slot1_y, last_slot0_y)
 
-        slope_start = delta_y_start / delta_x_start
-        slope_end = delta_y_end / delta_x_end
+        # distance part - for pinch gesture
+        distance_start = hypot(delta_x_start, delta_y_start)
+        distance_end = hypot(delta_x_end, delta_y_end)
+        distance_delta = delta(distance_end, distance_start)
 
-        delta_slope = slope_end - slope_start
+        # angle part - for rotation gesture
+        angle_start = angle(delta_x_start, delta_y_start)
+        angle_end = angle(delta_x_end, delta_y_end)
 
-        if abs(delta_slope) < self.MIN_SLOPE_DIST:
+        angle_delta = delta(angle_end, angle_start)
+
+        if angle_delta > 180.0:
+            angle_delta -= 360.0
+        elif angle_delta < -180.0:
+            angle_delta += 360.0
+
+        print("Angle : ", angle_delta, " - Dist : ", distance_delta)
+
+        # check for rotation gesture
+        if abs(angle_delta) > self.MIN_ANGLE_DIST and abs(distance_delta) < self.MIN_PINCH_DIST:
+            if angle_delta < 0:
+                return GesturesEnum.ROTATE_ACW
+            else:
+                return GesturesEnum.ROTATE_CW
+
+        # check for pinch gesture
+        elif abs(distance_delta) > self.MIN_PINCH_DIST:
+            if distance_delta < 0:
+                return GesturesEnum.PINCH_IN
+            else:
+                return GesturesEnum.PINCH_OUT
+
+        # gesture not defined
+        else:
             return GesturesEnum.NOT_DEFINED
 
-        if delta_slope < 0:
-            return GesturesEnum.ROTATE_ACW
-        else:
-            return GesturesEnum.ROTATE_CW
-
-
+        # https://wayland.freedesktop.org/libinput/doc/latest/gestures.html
+        # https://github.com/wayland-project/libinput/blob/master/src/evdev.c
+        # https://github.com/wayland-project/libinput/blob/master/src/evdev-mt-touchpad-gestures.c
+        # https://wayland.freedesktop.org/libinput/doc/latest/

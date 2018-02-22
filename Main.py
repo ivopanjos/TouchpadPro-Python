@@ -14,7 +14,7 @@ class MainClass:
 
         # initialize helper classes
         self.gestures = Gestures()
-        self.keyboard = Keyboard()
+        # self.keyboard = Keyboard()
         self.gestures_to_ecodes = GesturesToEcodes()
         self.window_manager = WindowManager()
 
